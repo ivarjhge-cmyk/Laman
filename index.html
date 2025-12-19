@@ -5,46 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lama</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; }
+        body { margin: 0; padding: 0; overflow: hidden; background: #87CEEB; } /* Ljusblå himmel som fallback */
         #game-container { position: relative; width: 100vw; height: 100vh; }
         
         #background {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('background.jpg') center/cover no-repeat;
+            background: url('background.png') center/cover no-repeat;
             z-index: 1;
         }
         
         #ground {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 40%;
-            background: url('ground.jpg') repeat-x bottom;
+            background: url('ground.png') repeat-x bottom left;
             background-size: auto 100%;
             z-index: 2;
             animation: scroll 30s linear infinite;
         }
         
         @keyframes scroll {
-            0% { background-position: 0 0; }
-            100% { background-position: -2000px 0; }
+            0% { background-position-x: 0; }
+            100% { background-position-x: -2000px; }
         }
         
         #llama {
             position: absolute;
-            bottom: 18%;
+            bottom: 20%;
             left: 50%;
-            width: 120px;
-            height: 120px;
-            background: url('llama.png') center/contain no-repeat;
+            width: 150px; /* Större för bättre synlighet */
+            height: 150px;
+            background: url('llama.png') 0 0 / 800% 100% no-repeat; /* 8 steg */
             transform: translateX(-50%);
             z-index: 3;
-            transition: bottom 0.2s;
         }
         
-        #llama.walk-left { animation: walk 0.8s steps(8) infinite; transform: translateX(-50%) scaleX(-1); }
-        #llama.walk-right { animation: walk 0.8s steps(8) infinite; transform: translateX(-50%) scaleX(1); }
+        #llama.walk-left { 
+            animation: walk 0.8s steps(8) infinite; 
+            transform: translateX(-50%) scaleX(-1); 
+        }
+        #llama.walk-right { 
+            animation: walk 0.8s steps(8) infinite; 
+            transform: translateX(-50%) scaleX(1); 
+        }
         
         @keyframes walk {
             0% { background-position: 0 0; }
-            100% { background-position: -960px 0; } /* 8 steg à 120px */
+            100% { background-position: -1200px 0; } /* 150px x 8 = 1200px */
         }
     </style>
 </head>
@@ -66,19 +71,19 @@
         function update() {
             if (isLeft) { velocity = -3; llama.className = 'walk-left'; }
             else if (isRight) { velocity = 3; llama.className = 'walk-right'; }
-            else { velocity *= 0.85; llama.className = ''; }
+            else { velocity *= 0.85; llama.className = ''; } // Sakta ner när stilla
 
             position += velocity * 0.1;
-            position = Math.max(10, Math.min(90, position));
+            position = Math.max(5, Math.min(95, position));
             llama.style.left = position + '%';
 
-            // Parallax på marken
-            ground.style.backgroundPositionX = -(position * 30) + 'px';
+            // Parallax-effekt
+            ground.style.backgroundPositionX = -(position * 40) + 'px';
 
             requestAnimationFrame(update);
         }
 
-        // Tangentbord
+        // Tangentbord (dator)
         window.addEventListener('keydown', e => {
             if (e.key === 'ArrowLeft') isLeft = true;
             if (e.key === 'ArrowRight') isRight = true;
@@ -88,7 +93,7 @@
             if (e.key === 'ArrowRight') isRight = false;
         });
 
-        // Touch (svep eller håll nere på sidorna)
+        // Touch (mobil – svep eller håll på sidorna)
         let touchStartX = 0;
         document.addEventListener('touchstart', e => {
             touchStartX = e.touches[0].clientX;
@@ -97,10 +102,13 @@
             else isRight = true;
         });
         document.addEventListener('touchmove', e => {
+            e.preventDefault(); // Förhindra scroll
             const diff = e.touches[0].clientX - touchStartX;
-            if (diff > 20) isRight = true, isLeft = false;
-            if (diff < -20) isLeft = true, isRight = false;
-        });
+            if (Math.abs(diff) > 20) {
+                if (diff > 0) isRight = true, isLeft = false;
+                else isLeft = true, isRight = false;
+            }
+        }, { passive: false });
         document.addEventListener('touchend', () => { isLeft = false; isRight = false; });
 
         update();
