@@ -40,7 +40,7 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             will-change: transform;
-            transition: transform 0.05s ease-out; /* Liten mjuk transition för extra len känsla */
+            transition: transform 0.05s ease-out;
         }
         
         * { -webkit-user-select: none; user-select: none; }
@@ -54,24 +54,23 @@
 
     <script>
         const llama = document.getElementById('llama');
-        let targetX = 0; // Målposition
+        let targetX = 0;
         let targetY = 0;
-        let currentX = 0; // Nuvarande (mjuk)
+        let currentX = 0;
         let currentY = 0;
 
-        const smoothing = 0.15; // Högre värde = långsammare men lenare följning (0.1–0.2 är bra)
+        const smoothing = 0.15; // Len följning
 
         function updatePosition() {
-            // Mjuk interpolation (lerp) – eliminerar skakning
             currentX += (targetX - currentX) * smoothing;
             currentY += (targetY - currentY) * smoothing;
             
             llama.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px))`;
             
-            requestAnimationFrame(updatePosition); // Kontinuerlig loop för silkeslen rörelse
+            requestAnimationFrame(updatePosition);
         }
 
-        // Tangentbord (padda/dator – snabb respons)
+        // Tangentbord
         window.addEventListener('keydown', e => {
             const step = 30;
             if (e.key === 'ArrowLeft') targetX -= step;
@@ -81,7 +80,7 @@
             clampTarget();
         });
 
-        // Touch (mobil – mjuk följning)
+        // Touch
         let lastTouchX = 0;
         let lastTouchY = 0;
 
@@ -100,7 +99,7 @@
             const deltaX = currentTouchX - lastTouchX;
             const deltaY = currentTouchY - lastTouchY;
             
-            targetX += deltaX * 1.0; // Känslighet – justera ner om för snabb
+            targetX += deltaX * 1.0;
             targetY += deltaY * 1.0;
             
             clampTarget();
@@ -109,14 +108,19 @@
             lastTouchY = currentTouchY;
         }, { passive: false });
 
+        // NYTT: Mycket större rörelseområde – nästan ända ut till kanterna
         function clampTarget() {
-            const maxX = window.innerWidth / 2 - 110;
-            const maxY = window.innerHeight / 2 - 110;
-            targetX = Math.max(-maxX, Math.min(maxX, targetX));
-            targetY = Math.max(-maxY, Math.min(maxY, targetY));
+            const halfWidth = window.innerWidth / 2;
+            const halfHeight = window.innerHeight / 2;
+            const llamaHalfSize = 100; // Halva laman (200px / 2)
+
+            // Tillåter att laman går nästan ända ut (bara 10px marginal)
+            const margin = 10;
+
+            targetX = Math.max(-(halfWidth - llamaHalfSize - margin), Math.min(halfWidth - llamaHalfSize - margin, targetX));
+            targetY = Math.max(-(halfHeight - llamaHalfSize - margin), Math.min(halfHeight - llamaHalfSize - margin, targetY));
         }
 
-        // Starta den mjuk animationen
         updatePosition();
     </script>
 </body>
