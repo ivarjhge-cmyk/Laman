@@ -33,7 +33,7 @@
             position: absolute;
             width: 200px;
             height: 200px;
-            background: url('llama.png') center/contain no-repeat;
+            background: url('llama.png?v=2') center/contain no-repeat; /* ?v=2 för att tvinga ny bild */
             z-index: 2;
             left: 50%;
             top: 50%;
@@ -51,7 +51,7 @@
             pointer-events: none;
             z-index: 4;
             opacity: 0;
-            transition: opacity 1s ease-in;
+            transition: opacity 1s ease-in-out;
         }
         
         #snow-container.active {
@@ -74,14 +74,14 @@
         
         #jultext {
             position: absolute;
-            top: 20%;
+            top: 15%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             font-family: Arial, sans-serif;
-            font-size: 3em;
+            font-size: 3.5em;
             font-weight: bold;
             color: red;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+            text-shadow: 3px 3px 10px rgba(0,0,0,0.7);
             z-index: 5;
             opacity: 0;
             transition: opacity 2s ease-in;
@@ -93,23 +93,25 @@
             opacity: 1;
         }
         
+        /* Knappen flyttad längst upp */
         #snow-button {
             position: absolute;
-            bottom: 30px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 15px 30px;
-            font-size: 1.5em;
-            background: rgba(255,255,255,0.8);
+            padding: 12px 28px;
+            font-size: 1.4em;
+            background: rgba(255,255,255,0.9);
             border: none;
             border-radius: 50px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             cursor: pointer;
             z-index: 10;
         }
         
         #snow-button:hover {
             background: white;
+            transform: translateX(-50%) scale(1.05);
         }
         
         * { -webkit-user-select: none; user-select: none; }
@@ -121,14 +123,41 @@
         <div id="llama"></div>
         <div id="snow-container"></div>
         <div id="jultext">God Jul Laman</div>
-        <button id="snow-button">God Jul</button>
+        <button id="snow-button">🎄 Starta snöfall</button>
     </div>
 
     <script>
+        // Vänta tills hela sidan är laddad innan vi kopplar knappen
+        document.addEventListener('DOMContentLoaded', () => {
+            const snowContainer = document.getElementById('snow-container');
+            const jultext = document.getElementById('jultext');
+            const button = document.getElementById('snow-button');
+
+            button.addEventListener('click', () => {
+                snowContainer.classList.add('active');
+                jultext.classList.add('active');
+                button.style.display = 'none'; // Döljer knappen efter klick
+                createSnowflakes();
+            });
+
+            function createSnowflakes() {
+                if (snowContainer.children.length > 0) return; // Undviker dubbla snöflingor om man klickar flera gånger
+                for (let i = 0; i < 100; i++) {
+                    const flake = document.createElement('div');
+                    flake.classList.add('snowflake');
+                    flake.textContent = ['❄', '❅', '❆'][Math.floor(Math.random() * 3)];
+                    flake.style.left = Math.random() * 100 + 'vw';
+                    flake.style.animationDuration = (Math.random() * 6 + 6) + 's';
+                    flake.style.opacity = Math.random() * 0.7 + 0.3;
+                    flake.style.fontSize = (Math.random() * 1.2 + 1) + 'em';
+                    flake.style.animationDelay = Math.random() * 5 + 's';
+                    snowContainer.appendChild(flake);
+                }
+            }
+        });
+
+        // Laman-rörelse (oförändrad och smidig)
         const llama = document.getElementById('llama');
-        const snowContainer = document.getElementById('snow-container');
-        const jultext = document.getElementById('jultext');
-        const button = document.getElementById('snow-button');
         let posX = 0;
         let posY = 0;
         const speed = 18;
@@ -137,59 +166,5 @@
             llama.style.transform = `translate(calc(-50% + ${posX}px), calc(-50% + ${posY}px))`;
         }
 
-        // Laman-rörelse (samma smidiga som innan)
         window.addEventListener('keydown', e => {
-            if (e.key === 'ArrowLeft') posX -= speed;
-            if (e.key === 'ArrowRight') posX += speed;
-            if (e.key === 'ArrowUp') posY -= speed;
-            if (e.key === 'ArrowDown') posY += speed;
-            posX = Math.max(-window.innerWidth/2 + 100, Math.min(window.innerWidth/2 - 100, posX));
-            posY = Math.max(-window.innerHeight/2 + 100, Math.min(window.innerHeight/2 - 100, posY));
-            updatePosition();
-        });
-
-        let touchStartX = 0;
-        let touchStartY = 0;
-        document.addEventListener('touchstart', e => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            e.preventDefault();
-        }, { passive: false });
-
-        document.addEventListener('touchmove', e => {
-            e.preventDefault();
-            const diffX = e.touches[0].clientX - touchStartX;
-            const diffY = e.touches[0].clientY - touchStartY;
-            posX += diffX * 1.2;
-            posY += diffY * 1.2;
-            posX = Math.max(-window.innerWidth/2 + 100, Math.min(window.innerWidth/2 - 100, posX));
-            posY = Math.max(-window.innerHeight/2 + 100, Math.min(window.innerHeight/2 - 100, posY));
-            updatePosition();
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, { passive: false });
-
-        // Snöfall och jultext
-        button.addEventListener('click', () => {
-            snowContainer.classList.add('active');
-            jultext.classList.add('active');
-            button.style.display = 'none'; // Döljer knappen efter klick
-            createSnowflakes();
-        });
-
-        function createSnowflakes() {
-            for (let i = 0; i < 80; i++) {
-                const flake = document.createElement('div');
-                flake.classList.add('snowflake');
-                flake.textContent = ['❄', '❅', '❆'][Math.floor(Math.random() * 3)];
-                flake.style.left = Math.random() * 100 + 'vw';
-                flake.style.animationDuration = (Math.random() * 5 + 5) + 's';
-                flake.style.opacity = Math.random() * 0.8 + 0.2;
-                flake.style.fontSize = (Math.random() * 1 + 1) + 'em';
-                flake.style.animationDelay = Math.random() * 10 + 's';
-                snowContainer.appendChild(flake);
-            }
-        }
-    </script>
-</body>
-</html>
+            if (e.key
