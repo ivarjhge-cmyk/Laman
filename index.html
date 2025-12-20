@@ -72,7 +72,7 @@
 
         // Tangentbord
         window.addEventListener('keydown', e => {
-            const step = 30;
+            const step = 40;
             if (e.key === 'ArrowLeft') targetX -= step;
             if (e.key === 'ArrowRight') targetX += step;
             if (e.key === 'ArrowUp') targetY -= step;
@@ -99,8 +99,8 @@
             const deltaX = currentTouchX - lastTouchX;
             const deltaY = currentTouchY - lastTouchY;
             
-            targetX += deltaX * 1.0;
-            targetY += deltaY * 1.0;
+            targetX += deltaX * 1.2; // Lite högre känslighet på mobil
+            targetY += deltaY * 1.2;
             
             clampTarget();
             
@@ -108,17 +108,20 @@
             lastTouchY = currentTouchY;
         }, { passive: false });
 
-        // NYTT: Mycket större rörelseområde – nästan ända ut till kanterna
+        // STÖRRE RÖRELSEOMRÅDE – laman går MYCKET längre ut
         function clampTarget() {
             const halfWidth = window.innerWidth / 2;
             const halfHeight = window.innerHeight / 2;
-            const llamaHalfSize = 100; // Halva laman (200px / 2)
+            const llamaHalfSize = 100; // 200px / 2
 
-            // Tillåter att laman går nästan ända ut (bara 10px marginal)
-            const margin = 10;
+            // Mycket liten marginal – bara 30px från kanten
+            const margin = 30;
 
-            targetX = Math.max(-(halfWidth - llamaHalfSize - margin), Math.min(halfWidth - llamaHalfSize - margin, targetX));
-            targetY = Math.max(-(halfHeight - llamaHalfSize - margin), Math.min(halfHeight - llamaHalfSize - margin, targetY));
+            const maxX = halfWidth - llamaHalfSize + margin; // Tillåter att laman går långt ut
+            const maxY = halfHeight - llamaHalfSize + margin;
+
+            targetX = Math.max(-maxX, Math.min(maxX, targetX));
+            targetY = Math.max(-maxY, Math.min(maxY, targetY));
         }
 
         updatePosition();
