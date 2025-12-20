@@ -12,6 +12,7 @@
             background: #87CEEB;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
+            height: 100vh;
         }
         #game-container { 
             position: relative; 
@@ -32,14 +33,83 @@
             position: absolute;
             width: 200px;
             height: 200px;
-            background: url('llama.png?=v2') center/contain no-repeat;
+            background: url('llama.png') center/contain no-repeat;
             z-index: 2;
             left: 50%;
             top: 50%;
-            transform: translate(-50%, -50%); /* Startposition */
+            transform: translate(-50%, -50%);
             pointer-events: none;
-            transition: transform 0.1s ease-out; /* Gör rörelsen extra len */
-            will-change: transform; /* Berättar för webbläsaren att optimera */
+            transition: transform 0.1s ease-out;
+            will-change: transform;
+        }
+        
+        #snow-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+            opacity: 0;
+            transition: opacity 1s ease-in;
+        }
+        
+        #snow-container.active {
+            opacity: 1;
+        }
+        
+        .snowflake {
+            position: absolute;
+            color: white;
+            font-size: 1.5em;
+            user-select: none;
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+        
+        @keyframes fall {
+            0% { transform: translateY(-100vh); }
+            100% { transform: translateY(100vh); }
+        }
+        
+        #jultext {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: Arial, sans-serif;
+            font-size: 3em;
+            font-weight: bold;
+            color: red;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 2s ease-in;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        
+        #jultext.active {
+            opacity: 1;
+        }
+        
+        #snow-button {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            font-size: 1.5em;
+            background: rgba(255,255,255,0.8);
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        #snow-button:hover {
+            background: white;
         }
         
         * { -webkit-user-select: none; user-select: none; }
@@ -49,37 +119,37 @@
     <div id="game-container">
         <div id="background"></div>
         <div id="llama"></div>
+        <div id="snow-container"></div>
+        <div id="jultext">God Jul Laman</div>
+        <button id="snow-button">God Jul</button>
     </div>
 
     <script>
         const llama = document.getElementById('llama');
-        let posX = 0; // i pixlar från centrum
+        const snowContainer = document.getElementById('snow-container');
+        const jultext = document.getElementById('jultext');
+        const button = document.getElementById('snow-button');
+        let posX = 0;
         let posY = 0;
-
-        const speed = 18; // Hur snabbt den rör sig (högre = snabbare)
+        const speed = 18;
 
         function updatePosition() {
             llama.style.transform = `translate(calc(-50% + ${posX}px), calc(-50% + ${posY}px))`;
         }
 
-        // Tangentbord (dator)
+        // Laman-rörelse (samma smidiga som innan)
         window.addEventListener('keydown', e => {
             if (e.key === 'ArrowLeft') posX -= speed;
             if (e.key === 'ArrowRight') posX += speed;
             if (e.key === 'ArrowUp') posY -= speed;
             if (e.key === 'ArrowDown') posY += speed;
-            
-            // Begränsa så laman inte åker utanför skärmen
             posX = Math.max(-window.innerWidth/2 + 100, Math.min(window.innerWidth/2 - 100, posX));
             posY = Math.max(-window.innerHeight/2 + 100, Math.min(window.innerHeight/2 - 100, posY));
-            
             updatePosition();
         });
 
-        // Touch (mobil – svep)
         let touchStartX = 0;
         let touchStartY = 0;
-
         document.addEventListener('touchstart', e => {
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
@@ -90,21 +160,36 @@
             e.preventDefault();
             const diffX = e.touches[0].clientX - touchStartX;
             const diffY = e.touches[0].clientY - touchStartY;
-
-            posX += diffX * 1.2; // Lite extra känslighet
+            posX += diffX * 1.2;
             posY += diffY * 1.2;
-
-            // Begränsa rörelse
             posX = Math.max(-window.innerWidth/2 + 100, Math.min(window.innerWidth/2 - 100, posX));
             posY = Math.max(-window.innerHeight/2 + 100, Math.min(window.innerHeight/2 - 100, posY));
-
             updatePosition();
-
-            // Uppdatera startpunkt för nästa rörelse (gör det kontinuerligt)
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         }, { passive: false });
+
+        // Snöfall och jultext
+        button.addEventListener('click', () => {
+            snowContainer.classList.add('active');
+            jultext.classList.add('active');
+            button.style.display = 'none'; // Döljer knappen efter klick
+            createSnowflakes();
+        });
+
+        function createSnowflakes() {
+            for (let i = 0; i < 80; i++) {
+                const flake = document.createElement('div');
+                flake.classList.add('snowflake');
+                flake.textContent = ['❄', '❅', '❆'][Math.floor(Math.random() * 3)];
+                flake.style.left = Math.random() * 100 + 'vw';
+                flake.style.animationDuration = (Math.random() * 5 + 5) + 's';
+                flake.style.opacity = Math.random() * 0.8 + 0.2;
+                flake.style.fontSize = (Math.random() * 1 + 1) + 'em';
+                flake.style.animationDelay = Math.random() * 10 + 's';
+                snowContainer.appendChild(flake);
+            }
+        }
     </script>
 </body>
 </html>
-
