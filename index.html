@@ -9,9 +9,9 @@
             margin: 0; 
             padding: 0; 
             overflow: hidden; 
-            background: #87CEEB; /* Ljusblå himmel som fallback */
-            -webkit-tap-highlight-color: transparent; /* Ingen blå markering på mobil */
-            touch-action: manipulation; /* Bättre touch-respons */
+            background: #87CEEB;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
         #game-container { 
             position: relative; 
@@ -30,17 +30,18 @@
         
         #llama {
             position: absolute;
-            width: 200px; /* Stor och tydlig */
+            width: 200px;
             height: 200px;
             background: url('llama.png') center/contain no-repeat;
             z-index: 2;
             left: 50%;
             top: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none; /* Så laman inte stör touch */
+            transform: translate(-50%, -50%); /* Startposition */
+            pointer-events: none;
+            transition: transform 0.1s ease-out; /* Gör rörelsen extra len */
+            will-change: transform; /* Berättar för webbläsaren att optimera */
         }
         
-        /* Ingen blå highlight vid touch */
         * { -webkit-user-select: none; user-select: none; }
     </style>
 </head>
@@ -52,54 +53,57 @@
 
     <script>
         const llama = document.getElementById('llama');
-        let posX = 50; // procent
-        let posY = 50; // procent
+        let posX = 0; // i pixlar från centrum
+        let posY = 0;
+
+        const speed = 18; // Hur snabbt den rör sig (högre = snabbare)
 
         function updatePosition() {
-            llama.style.left = posX + '%';
-            llama.style.top = posY + '%';
+            llama.style.transform = `translate(calc(-50% + ${posX}px), calc(-50% + ${posY}px))`;
         }
 
-        // Tangentbord (dator: pil-tangenter)
+        // Tangentbord (dator)
         window.addEventListener('keydown', e => {
-            if (e.key === 'ArrowLeft') posX = Math.max(10, posX - 5);
-            if (e.key === 'ArrowRight') posX = Math.min(90, posX + 5);
-            if (e.key === 'ArrowUp') posY = Math.max(10, posY - 5);
-            if (e.key === 'ArrowDown') posY = Math.min(90, posY + 5);
+            if (e.key === 'ArrowLeft') posX -= speed;
+            if (e.key === 'ArrowRight') posX += speed;
+            if (e.key === 'ArrowUp') posY -= speed;
+            if (e.key === 'ArrowDown') posY += speed;
+            
+            // Begränsa så laman inte åker utanför skärmen
+            posX = Math.max(-window.innerWidth/2 + 100, Math.min(window.innerWidth/2 - 100, posX));
+            posY = Math.max(-window.innerHeight/2 + 100, Math.min(window.innerHeight/2 - 100, posY));
+            
             updatePosition();
         });
 
-        // Touch (mobil: svep i fyra riktningar)
+        // Touch (mobil – svep)
         let touchStartX = 0;
         let touchStartY = 0;
+
         document.addEventListener('touchstart', e => {
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
-            e.preventDefault(); // Förhindra scroll och markering
+            e.preventDefault();
         }, { passive: false });
 
         document.addEventListener('touchmove', e => {
-            e.preventDefault(); // Viktigt för att undvika markering/scroll
+            e.preventDefault();
             const diffX = e.touches[0].clientX - touchStartX;
             const diffY = e.touches[0].clientY - touchStartY;
 
-            if (Math.abs(diffX) > 30 || Math.abs(diffY) > 30) {
-                if (Math.abs(diffX) > Math.abs(diffY)) {
-                    // Horisontell svep
-                    if (diffX > 0) posX = Math.min(90, posX + 8);
-                    else posX = Math.max(10, posX - 8);
-                } else {
-                    // Vertikal svep
-                    if (diffY > 0) posY = Math.min(90, posY + 8);
-                    else posY = Math.max(10, posY - 8);
-                }
-                updatePosition();
-                touchStartX = e.touches[0].clientX; // För kontinuerlig rörelse
-                touchStartY = e.touches[0].clientY;
-            }
-        }, { passive: false });
+            posX += diffX * 1.2; // Lite extra känslighet
+            posY += diffY * 1.2;
 
-        updatePosition();
+            // Begränsa rörelse
+            posX = Math.max(-window.innerWidth/2 + 100, Math.min(window.innerWidth/2 - 100, posX));
+            posY = Math.max(-window.innerHeight/2 + 100, Math.min(window.innerHeight/2 - 100, posY));
+
+            updatePosition();
+
+            // Uppdatera startpunkt för nästa rörelse (gör det kontinuerligt)
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: false });
     </script>
 </body>
 </html>
