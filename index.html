@@ -11,7 +11,7 @@
             overflow: hidden; 
             background: #87CEEB;
             -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
+            touch-action: pan-x pan-y; /* Bättre prestanda på mobil */
         }
         #game-container { 
             position: relative; 
@@ -32,14 +32,13 @@
             position: absolute;
             width: 200px;
             height: 200px;
-            background: url('llama.png?v=3') center/contain no-repeat; /* ?v=3 för att tvinga ny bild om cache spökar */
+            background: url('llama.png?v=3') center/contain no-repeat;
             z-index: 2;
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
-            transition: transform 0.1s ease-out;
-            will-change: transform;
+            will-change: transform; /* Viktigt för prestanda */
         }
         
         * { -webkit-user-select: none; user-select: none; }
@@ -53,44 +52,67 @@
 
     <script>
         const llama = document.getElementById('llama');
-        let posX = 0;
+        let posX = 0; // pixlar från centrum
         let posY = 0;
-        const speed = 18;
+
+        // Långsammare och mjukare rörelse på mobil
+        const speed = 12; // Lägre än innan = mindre lagg
 
         function updatePosition() {
             llama.style.transform = `translate(calc(-50% + ${posX}px), calc(-50% + ${posY}px))`;
         }
 
+        // Tangentbord (för padda/dator)
         window.addEventListener('keydown', e => {
-            if (e.key === 'ArrowLeft') posX -= speed;
-            if (e.key === 'ArrowRight') posX += speed;
-            if (e.key === 'ArrowUp') posY -= speed;
-            if (e.key === 'ArrowDown') posY += speed;
-            posX = Math.max(-window.innerWidth/2 + 100, Math.min(window.innerWidth/2 - 100, posX));
-            posY = Math.max(-window.innerHeight/2 + 100, Math.min(window.innerHeight/2 - 100, posY));
+            if (e.key === 'ArrowLeft') posX -= speed * 2;
+            if (e.key === 'ArrowRight') posX += speed * 2;
+            if (e.key === 'ArrowUp') posY -= speed * 2;
+            if (e.key === 'ArrowDown') posY += speed * 2;
+            clampPosition();
             updatePosition();
         });
 
-        let touchStartX = 0;
-        let touchStartY = 0;
+        // Touch för mobil – optimerad för svagare telefoner
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+
         document.addEventListener('touchstart', e => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
+            lastTouchX = e.touches[0].clientX;
+            lastTouchY = e.touches[0].clientY;
             e.preventDefault();
         }, { passive: false });
 
         document.addEventListener('touchmove', e => {
             e.preventDefault();
-            const diffX = e.touches[0].clientX - touchStartX;
-            const diffY = e.touches[0].clientY - touchStartY;
-            posX += diffX * 1.2;
-            posY += diffY * 1.2;
-            posX = Math.max(-window.innerWidth/2 + 100, Math.min(window.innerWidth/2 - 100, posX));
-            posY = Math.max(-window.innerHeight/2 + 100, Math.min(window.innerHeight/2 - 100, posY));
+            
+            const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
+            
+            const diffX = currentX - lastTouchX;
+            const diffY = currentY - lastTouchY;
+            
+            posX += diffX * 0.8; // Lägre multiplikator = mindre hopp
+            posY += diffY * 0.8;
+            
+            clampPosition();
             updatePosition();
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
+            
+            lastTouchX = currentX;
+            lastTouchY = currentY;
         }, { passive: false });
+
+        // Enkel begränsning – snabbare än Math.max/min varje gång
+        function clampPosition() {
+            const maxX = window.innerWidth / 2 - 100;
+            const maxY = window.innerHeight / 2 - 100;
+            if (posX > maxX) posX = maxX;
+            if (posX < -maxX) posX = -maxX;
+            if (posY > maxY) posY = maxY;
+            if (posY < -maxY) posY = -maxY;
+        }
+
+        // Startposition
+        updatePosition();
     </script>
 </body>
 </html>
