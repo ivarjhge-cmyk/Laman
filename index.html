@@ -5,113 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lama</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #87CEEB; } /* Ljusblå himmel som fallback */
-        #game-container { position: relative; width: 100vw; height: 100vh; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background: #87CEEB; /* Ljusblå himmel som fallback */
+            -webkit-tap-highlight-color: transparent; /* Ingen blå markering på mobil */
+            touch-action: manipulation; /* Bättre touch-respons */
+        }
+        #game-container { 
+            position: relative; 
+            width: 100vw; 
+            height: 100vh; 
+        }
         
         #background {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; 
+            height: 100%;
             background: url('background.png') center/cover no-repeat;
             z-index: 1;
         }
         
-        #ground {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 40%;
-            background: url('ground.png') repeat-x bottom left;
-            background-size: auto 100%;
-            z-index: 2;
-            animation: scroll 30s linear infinite;
-        }
-        
-        @keyframes scroll {
-            0% { background-position-x: 0; }
-            100% { background-position-x: -2000px; }
-        }
-        
         #llama {
             position: absolute;
-            bottom: 20%;
+            width: 200px; /* Stor och tydlig */
+            height: 200px;
+            background: url('llama.png') center/contain no-repeat;
+            z-index: 2;
             left: 50%;
-            width: 150px; /* Större för bättre synlighet */
-            height: 150px;
-            background: url('llama.png') 0 0 / 800% 100% no-repeat; /* 8 steg */
-            transform: translateX(-50%);
-            z-index: 3;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none; /* Så laman inte stör touch */
         }
         
-        #llama.walk-left { 
-            animation: walk 0.8s steps(8) infinite; 
-            transform: translateX(-50%) scaleX(-1); 
-        }
-        #llama.walk-right { 
-            animation: walk 0.8s steps(8) infinite; 
-            transform: translateX(-50%) scaleX(1); 
-        }
-        
-        @keyframes walk {
-            0% { background-position: 0 0; }
-            100% { background-position: -1200px 0; } /* 150px x 8 = 1200px */
-        }
+        /* Ingen blå highlight vid touch */
+        * { -webkit-user-select: none; user-select: none; }
     </style>
 </head>
 <body>
     <div id="game-container">
         <div id="background"></div>
-        <div id="ground"></div>
         <div id="llama"></div>
     </div>
 
     <script>
         const llama = document.getElementById('llama');
-        const ground = document.getElementById('ground');
-        let position = 50;
-        let velocity = 0;
-        let isLeft = false;
-        let isRight = false;
+        let posX = 50; // procent
+        let posY = 50; // procent
 
-        function update() {
-            if (isLeft) { velocity = -3; llama.className = 'walk-left'; }
-            else if (isRight) { velocity = 3; llama.className = 'walk-right'; }
-            else { velocity *= 0.85; llama.className = ''; } // Sakta ner när stilla
-
-            position += velocity * 0.1;
-            position = Math.max(5, Math.min(95, position));
-            llama.style.left = position + '%';
-
-            // Parallax-effekt
-            ground.style.backgroundPositionX = -(position * 40) + 'px';
-
-            requestAnimationFrame(update);
+        function updatePosition() {
+            llama.style.left = posX + '%';
+            llama.style.top = posY + '%';
         }
 
-        // Tangentbord (dator)
+        // Tangentbord (dator: pil-tangenter)
         window.addEventListener('keydown', e => {
-            if (e.key === 'ArrowLeft') isLeft = true;
-            if (e.key === 'ArrowRight') isRight = true;
-        });
-        window.addEventListener('keyup', e => {
-            if (e.key === 'ArrowLeft') isLeft = false;
-            if (e.key === 'ArrowRight') isRight = false;
+            if (e.key === 'ArrowLeft') posX = Math.max(10, posX - 5);
+            if (e.key === 'ArrowRight') posX = Math.min(90, posX + 5);
+            if (e.key === 'ArrowUp') posY = Math.max(10, posY - 5);
+            if (e.key === 'ArrowDown') posY = Math.min(90, posY + 5);
+            updatePosition();
         });
 
-        // Touch (mobil – svep eller håll på sidorna)
+        // Touch (mobil: svep i fyra riktningar)
         let touchStartX = 0;
+        let touchStartY = 0;
         document.addEventListener('touchstart', e => {
             touchStartX = e.touches[0].clientX;
-            const width = window.innerWidth;
-            if (touchStartX < width / 2) isLeft = true;
-            else isRight = true;
-        });
+            touchStartY = e.touches[0].clientY;
+            e.preventDefault(); // Förhindra scroll och markering
+        }, { passive: false });
+
         document.addEventListener('touchmove', e => {
-            e.preventDefault(); // Förhindra scroll
-            const diff = e.touches[0].clientX - touchStartX;
-            if (Math.abs(diff) > 20) {
-                if (diff > 0) isRight = true, isLeft = false;
-                else isLeft = true, isRight = false;
+            e.preventDefault(); // Viktigt för att undvika markering/scroll
+            const diffX = e.touches[0].clientX - touchStartX;
+            const diffY = e.touches[0].clientY - touchStartY;
+
+            if (Math.abs(diffX) > 30 || Math.abs(diffY) > 30) {
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    // Horisontell svep
+                    if (diffX > 0) posX = Math.min(90, posX + 8);
+                    else posX = Math.max(10, posX - 8);
+                } else {
+                    // Vertikal svep
+                    if (diffY > 0) posY = Math.min(90, posY + 8);
+                    else posY = Math.max(10, posY - 8);
+                }
+                updatePosition();
+                touchStartX = e.touches[0].clientX; // För kontinuerlig rörelse
+                touchStartY = e.touches[0].clientY;
             }
         }, { passive: false });
-        document.addEventListener('touchend', () => { isLeft = false; isRight = false; });
 
-        update();
+        updatePosition();
     </script>
 </body>
 </html>
